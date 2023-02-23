@@ -1,4 +1,5 @@
-# Addgene
+# Addgene Dashboard
+
  A dashboard to display plasmid request data from [Addgene](http://www.addgene.org)
 
 Depositors can download an overview of requests for their deposited plasmids, see [this how-to](https://help.addgene.org/hc/en-us/articles/206135605-I-am-a-PI-who-has-deposited-with-Addgene-How-can-I-track-my-deposits-and-see-which-labs-have-requested-them-).
