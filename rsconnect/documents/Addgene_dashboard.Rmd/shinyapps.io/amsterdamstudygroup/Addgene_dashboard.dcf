@@ -1,0 +1,13 @@
+name: Addgene_dashboard
+title: Addgene_dashboard
+username:
+account: amsterdamstudygroup
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 8395239
+bundleId: 6880117
+url: https://amsterdamstudygroup.shinyapps.io/Addgene_dashboard/
+when: 1677175569.32226
+lastSyncTime: 1677175569.32227
+asMultiple: FALSE
+asStatic: FALSE
