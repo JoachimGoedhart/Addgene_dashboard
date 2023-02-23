@@ -7,3 +7,8 @@ The dashboard aims to provide a quick overview of the data. To this end, upload 
 
 You can run the dashboard locally in Rstudio after downoading the [Addgene_dashboard.Rmd](https://github.com/JoachimGoedhart/Addgene_dashboard/blob/main/Addgene_dashboard.Rmd) file or use it online at this site: [https://amsterdamstudygroup.shinyapps.io/Addgene_dashboard/](https://amsterdamstudygroup.shinyapps.io/Addgene_dashboard/)
 
+----------
+
+The default output of the dashboard looks like this:
+
+![](output.png)
