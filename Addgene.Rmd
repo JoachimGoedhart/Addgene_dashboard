@@ -1,0 +1,341 @@
+---
+title: Addgene requests dashboard
+output: 
+  flexdashboard::flex_dashboard:
+    theme: cerulean
+    orientation: rows
+    vertical_layout: fill
+    social: ["menu"]
+    source_code: embed
+    navbar:
+      - { title: "Addgene", href: "https://www.addgene.org", align: right }
+runtime: shiny
+---
+
+
+```{r setup, include=FALSE}
+### Load the required packages
+library(flexdashboard)
+library(tidyverse)
+library(plotly)
+```
+
+
+```{r}
+### Read the data - example is overwritten when a new CSV is uploaded.
+dfUploaded <- reactive({
+  if (is.null(input$filein)) {
+    example <- "Addgene-Requests-for-Materials-Joachim-Goedhart-2005-2023-2023-Jan-31-05-05.csv"
+    df <- read.csv(example, stringsAsFactors = TRUE)
+  } else {
+    df <- read.csv(input$filein$datapath)
+  }
+  df <- df %>% separate(Date.Ordered, into = c("Month","Day","Year"), sep = "/", convert = TRUE)
+})
+
+```
+
+
+```{r}
+### Get the username and download date from the filename
+df <- reactive({
+  if (!is.null(input$filein)) {
+    filein <- input$filein$name
+  } else {
+    filein <- "Addgene-Requests-for-Materials-Joachim-Goedhart-2005-2023-2023-Jan-31-05-05.csv"
+  }
+  fileWords <- str_split(filein, "-")
+})
+```
+
+<!---------------- START OF THE LAYOUT OF THE DASHBOARD -------------->
+
+# Column {.sidebar}
+-----------------------------------------------------------------------
+
+### About
+
+_This dashboard summarizes and displays the data that is provided by [Addgene](www.addgene.org) on the requested reagents._
+
+-------------
+
+### Data upload
+
+```{r}
+fileInput("filein",
+          "Choose CSV File",
+          multiple = F,
+          accept = c("text/csv", ".csv")
+)
+```
+
+--------------
+
+```{r}
+renderUI({
+  textVector <- df() %>% unlist(use.names = FALSE)
+  HTML(paste("<i>These data were donwloaded by:",
+             textVector[5], textVector[6],
+             "</br>","on:",
+             textVector[10], textVector[9],
+             "</i>"))
+  })
+
+```
+
+-----------
+
+### Layout
+
+Use the input below to change the plots:
+
+```{r}
+
+numericInput('sampleSize', 'Number of reagents', min=1,
+            value=20, step=1)
+
+numericInput('maxRank', 'Number of countries', min=1,
+            value=12, step=1)
+
+```
+
+<!---------------- FIRST ROW OF THE DASHBOARD WITH VALUEBOXES -------------->
+
+Row
+-----------------------------------------------------------------------
+
+### Requests {.value-box}
+
+```{r}
+renderValueBox({
+  totalRequests <- nrow(dfUploaded())
+  valueBox(
+    value = totalRequests,
+    icon = "fa-flask",
+    color = "primary",
+    href = "http://addgene.org/Dorus_Gadella/"
+  )
+})
+```
+
+### Unique reagents {.value-box}
+
+```{r}
+renderValueBox({
+  numberOfReagents <- length(unique(dfUploaded()$Material))
+  valueBox(
+    value = numberOfReagents,
+    icon = "fa-circle-notch",
+    color = "primary"
+  )
+})
+```
+
+### Years of sharing {.value-box}
+
+```{r}
+renderValueBox({
+  activeYears <- max(dfUploaded()$Year) - min(dfUploaded()$Year) + 1
+  valueBox(
+    value = activeYears,
+    icon = "fa-calendar",
+    color = "primary"
+  )
+})
+```
+
+### Countries {.value-box}
+
+```{r}
+renderValueBox({
+  numberOfCountries <- length(unique(dfUploaded()$Requesting.Country))
+  valueBox(
+    value = numberOfCountries,
+    icon = "fa-globe",
+    color = "primary"
+  )
+})
+```
+
+
+<!---------------- SECOND ROW OF THE DASHBOARD WITH INTERACTIVE PLOTS -------------->
+
+Row {data-height=700}
+-----------------------------------------------------------------------
+
+### Number of requests per reagent {data-width=770}
+
+```{r}
+dfPlasmidCount <- reactive({
+  dfUploaded() %>%
+  group_by(Material, ID) %>%
+  tally(sort = TRUE) %>% ungroup() %>%
+  mutate(Material = fct_reorder(Material, n)) %>%
+  mutate(flame = case_when(n<20 ~ "grey80",
+                           (n>=20 & n<50) ~ "#E19E37",
+                           (n>=50 & n <100) ~ "#D96C6D",
+                           n>=100 ~ "#50B0E8")
+  )
+})
+```
+
+
+```{r}
+dfPlasmidCountSelected <- reactive({
+  dfPlasmidCount() %>% slice(1:input$sampleSize)
+})
+
+renderPlotly({
+  p <- ggplot(dfPlasmidCountSelected(), aes(x=Material, y=n, fill=flame)) +
+  geom_col() +
+  coord_flip() + 
+  scale_fill_identity() +
+  theme_bw(base_size = 10) +
+  theme(legend.position = "none") +
+  scale_y_continuous(expand = c(0,0)) +
+  labs(x="", y="") +
+  theme(panel.border = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_blank(),
+        axis.ticks.x = element_blank() 
+  )
+  
+  if (input$sampleSize >30) {
+    #Remove labels
+    p <- p + theme(axis.text.y = element_blank())
+  }
+  
+  ggplotly(p, tooltip = c("Material","n")) %>% config(displayModeBar = F)
+})
+
+```
+
+### Number of requests per country {data-width=250}
+
+```{r}
+dfTopCountries <- reactive({
+  dfUploaded() %>%
+  mutate(Country = str_to_title(Requesting.Country)) %>%
+  group_by(Country) %>%
+  mutate(n=n()) %>% ungroup() %>% mutate(`Country` = fct_reorder(Country, n)) %>%
+  mutate(rank=max(as.numeric(Country))-as.numeric(Country)+1) %>%
+    filter(rank<=input$maxRank)
+})
+
+renderPlotly({
+g <- ggplot(dfTopCountries(), aes(x = 1, y = Country)) +
+  geom_count(alpha=0.5) + coord_flip() + scale_size_area(max_size = 8) +
+  theme_bw(base_size = 12) +
+  theme(legend.position = "bottom") +
+  # scale_y_continuous(expand = c(0,0)) +
+  labs(x="", y="") +
+  theme(panel.border = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.x = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text.x = element_blank()
+  ) +
+  coord_cartesian(clip = 'off')
+
+  ggplotly(g, tooltip = c("n")) %>% config(displayModeBar = F)
+})
+```
+
+<!---------------- THIRD ROW OF THE DASHBOARD WITH INTERACTIVE PLOT AND WRITTEN SUMMARY -------------->
+
+Row {data-height=400}
+-----------------------------------------------------------------------
+
+### Requests per year {data-width=250}
+
+
+```{r}
+dfYearsCount <- reactive({
+  dfUploaded() %>% group_by(Year) %>%
+  tally(sort = TRUE) %>% ungroup()
+})
+```
+
+
+```{r}
+renderPlotly({
+  p <- ggplot(dfYearsCount(), aes(x=Year, y=n)) +
+  geom_col() +
+  theme_bw(base_size = 10) +
+  theme(legend.position = "none") +
+  scale_y_continuous(expand = c(0,0)) +
+  labs(x="", y="") +
+  theme(panel.border = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.x = element_blank(),
+        axis.ticks.y = element_blank() 
+  )
+  ggplotly(p, tooltip = c("Year", "n")) %>% config(displayModeBar = F)
+})
+
+```
+
+### Summary
+
+```{r}
+renderUI({
+
+withProgress(message = 'Fetching the data', detail = 'This may take a while...', value = 0, {
+               
+  ######## Calculate some numbers and stats
+  mostPopular <- dfPlasmidCount() %>% ungroup() %>% slice(1)
+  totalRequests <- nrow(dfUploaded())
+  numberOfCountries <- length(unique(dfUploaded()$Requesting.Country))
+  
+  firstRequest <- min(dfYearsCount()$Year)
+  bestYear <- dfYearsCount() %>% top_n(1, n)
+  lastYear <- max(dfYearsCount()$Year)-1
+  df_lastyear <- dfUploaded() %>% filter(Year==lastYear) %>%
+    group_by(Material, ID) %>%
+    tally(sort = TRUE) %>% ungroup()
+  bestLastYear  <- df_lastyear %>% top_n(1, n)
+  popularLastYear <- df_lastyear %>% top_n(3, n) %>% pull(Material) %>% as.character()
+  
+  dfOnFire <- dfPlasmidCount() %>% group_by(flame) %>% summarize(n=n())
+  
+  numberOfBlueFlames <- dfOnFire %>% filter(flame == "#50B0E8") %>% pull(n)
+  numberOfYellowFlames <- dfOnFire %>% filter(flame == "#E19E37") %>% pull(n)
+  numberOfRedFlames <- dfOnFire %>% filter(flame == "#D96C6D") %>% pull(n)
+
+  ######## Report on the numbers and stats
+  
+  text <- paste("A total number of",totalRequests,"reagents has been sent to ",
+                numberOfCountries ," different countries. ")
+  text <- paste0(text,'The most requested material is <a href="http://www.addgene.org/',
+                 mostPopular$ID,'">', mostPopular$Material, '</a>')
+  
+  
+  text <- paste0(text, "</br></br>The first reagent was send in ",
+                 firstRequest,". Most reagents, ",bestYear$n,", were sent in ",
+                 bestYear$Year,". In ",lastYear,", ",nrow(df_lastyear),
+                 " unique reagents were shared. That year the most popular reagent was ",
+                 bestLastYear$Material," with ",bestLastYear$n,
+                 " requests. Other populare reagents were ", popularLastYear[2]," & ",popularLastYear[3],".</br>")
+  
+  if (nrow(dfOnFire)>1) {
+    
+              text <- paste0(text,'</br>Reagents with <a href = ',
+                             '"https://help.addgene.org/hc/en-us/articles/205742239-What-do-the-flames-mean-"',
+                             '>Addgene flames</a>:')
+            
+              text <- paste0(text,'<ul>
+                             <li>',numberOfBlueFlames,' <span style="color: #50B0E8;"><b>Blue</b></span> flames</li>
+                             <li>',numberOfRedFlames,' <span style="color: #D96C6D;"><b>Red</b></span> flames</li>
+                             <li>',numberOfYellowFlames,' <span style="color: #E19E37;"><b>Yellow</b></span> flames</li
+                             </ul>')
+  }
+  
+incProgress(1)
+})
+
+return(HTML(text))
+
+  
+})
+```
+
