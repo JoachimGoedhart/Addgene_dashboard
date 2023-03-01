@@ -8,7 +8,7 @@ output:
     social: ["menu"]
     source_code: "https://github.com/JoachimGoedhart/Addgene_dashboard"
     navbar:
-      - { title: "Addgene", href: "https://www.addgene.org", align: right }
+      - { title: "addgene.org", href: "https://www.addgene.org", align: right }
 runtime: shiny
 ---
 
@@ -74,7 +74,7 @@ fileInput("filein",
 ```{r}
 renderUI({
   textVector <- df() %>% unlist(use.names = FALSE)
-  HTML(paste("<i>These data were donwloaded by:",
+  HTML(paste("<i>These data were downloaded by:",
              textVector[5], textVector[6],
              "</br>","on:",
              textVector[10], textVector[9],
@@ -113,7 +113,7 @@ renderValueBox({
     value = totalRequests,
     icon = "fa-flask",
     color = "primary",
-    href = "http://addgene.org/Dorus_Gadella/"
+    href = ""
   )
 })
 ```
@@ -310,12 +310,12 @@ withProgress(message = 'Fetching the data', detail = 'This may take a while...',
                  mostPopular$ID,'">', mostPopular$Material, '</a>')
   
   
-  text <- paste0(text, "</br></br>The first reagent was send in ",
+  text <- paste0(text, "</br></br>The first reagent was sent in ",
                  firstRequest,". Most reagents, ",bestYear$n,", were sent in ",
                  bestYear$Year,". In ",lastYear,", ",nrow(df_lastyear),
                  " unique reagents were shared. That year the most popular reagent was ",
                  bestLastYear$Material," with ",bestLastYear$n,
-                 " requests. Other populare reagents were ", popularLastYear[2]," & ",popularLastYear[3],".</br>")
+                 " requests. Other popular reagents were ", popularLastYear[2]," & ",popularLastYear[3],".</br>")
   
   if (nrow(dfOnFire)>1) {
     
