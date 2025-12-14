@@ -25,7 +25,9 @@ library(plotly)
 ### Read the data - example is overwritten when a new CSV is uploaded.
 dfUploaded <- reactive({
   if (is.null(input$filein)) {
-    example <- "Addgene-Requests-for-Materials-Joachim-Goedhart-2005-2023-2023-Jan-31-05-05.csv"
+    # example <- "Addgene-Requests-for-Materials-Joachim-Goedhart-2005-2023-2023-Jan-31-05-05.csv"
+    example <- "Addgene-Requests-for-Materials-Joachim-Goedhart-2005-2025-2025-Dec-12-09-15.csv"
+
     df <- read.csv(example, stringsAsFactors = TRUE)
   } else {
     df <- read.csv(input$filein$datapath)

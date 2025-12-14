@@ -1,0 +1,12 @@
+name: Addgene_dashboard
+title: Addgene_dashboard
+username: uva-nl
+account: uva-nl
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 16301838
+bundleId: 11314490
+url: https://uva-nl.shinyapps.io/Addgene_dashboard/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
